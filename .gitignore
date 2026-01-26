@@ -7,6 +7,7 @@ benchmarks/pgdata/
 
 # YCSB build artifacts
 benchmarks/YCSB/
+benchmarks/YCSB-src/
 
 # Python
 __pycache__/
