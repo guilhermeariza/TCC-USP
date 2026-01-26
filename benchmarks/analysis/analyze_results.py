@@ -26,20 +26,21 @@ def main():
     results_dir = sys.argv[1] if len(sys.argv) > 1 else "results"
     data = []
 
-    for filename in os.listdir(results_dir):
-        if filename.endswith(".log") and "run" in filename:
-            # Expected filename format: {db}_{workload}_run_{timestamp}.log
-            parts = filename.split('_')
-            if len(parts) >= 3:
-                db = parts[0]
-                workload = parts[1] + "_" + parts[2] # e.g. workload_a
-                
-                filepath = os.path.join(results_dir, filename)
-                metrics = parse_ycsb_log(filepath)
-                
-                row = {'DB': db, 'Workload': workload}
-                row.update(metrics)
-                data.append(row)
+    for root, dirs, files in os.walk(results_dir):
+        for filename in files:
+            if filename.endswith(".log") and "run" in filename:
+                # Expected filename format: {db}_{workload}_run_{timestamp}.log
+                parts = filename.split('_')
+                if len(parts) >= 3:
+                    db = parts[0]
+                    workload = parts[1] + "_" + parts[2] # e.g. workload_a
+                    
+                    filepath = os.path.join(root, filename)
+                    metrics = parse_ycsb_log(filepath)
+                    
+                    row = {'DB': db, 'Workload': workload}
+                    row.update(metrics)
+                    data.append(row)
 
     df = pd.DataFrame(data)
     
@@ -54,7 +55,15 @@ def main():
     os.makedirs("analysis/charts", exist_ok=True)
     
     # Throughput Comparison
-    pivot_throughput = df.pivot(index='Workload', columns='DB', values='Throughput')
+    # Filter out 0 throughput (failed runs)
+    df = df[df['Throughput'] > 0]
+    
+    if df.empty:
+        print("No valid data found (Throughput > 0).")
+        return
+
+    # Use pivot_table to handle duplicates (taking the max throughput found)
+    pivot_throughput = df.pivot_table(index='Workload', columns='DB', values='Throughput', aggfunc='max')
     pivot_throughput.plot(kind='bar', figsize=(10, 6))
     plt.title('Throughput Comparison (Ops/sec)')
     plt.ylabel('Throughput (ops/sec)')
@@ -64,7 +73,7 @@ def main():
 
     # Latency Comparison (Read Avg)
     if 'Read_Avg_Lat' in df.columns:
-        pivot_latency = df.pivot(index='Workload', columns='DB', values='Read_Avg_Lat')
+        pivot_latency = df.pivot_table(index='Workload', columns='DB', values='Read_Avg_Lat', aggfunc='mean')
         pivot_latency.plot(kind='bar', figsize=(10, 6))
         plt.title('Read Average Latency Comparison')
         plt.ylabel('Latency (us)')

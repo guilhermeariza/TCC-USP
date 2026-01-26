@@ -23,6 +23,7 @@ services:
     volumes:
       - ./results:/app/results
       - ./analysis:/app/analysis
+      - ./scripts:/app/scripts
     environment:
       PG_HOST: postgres
       PG_PORT: 5432

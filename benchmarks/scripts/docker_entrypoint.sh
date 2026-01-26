@@ -53,7 +53,7 @@ run_workloads() {
 }
 
 # 1. Run PostgreSQL Benchmarks
-PG_PROPS="-p db.driver=org.postgresql.Driver -p jdbc.url=jdbc:postgresql://$PG_HOST:$PG_PORT/ycsb -p jdbc.user=ycsb -p jdbc.password=ycsb"
+PG_PROPS="-p db.driver=org.postgresql.Driver -p db.url=jdbc:postgresql://$PG_HOST:$PG_PORT/ycsb -p jdbc.url=jdbc:postgresql://$PG_HOST:$PG_PORT/ycsb -p db.user=ycsb -p db.password=ycsb -p db.passwd=ycsb -p jdbc.user=ycsb -p jdbc.password=ycsb"
 run_workloads "jdbc" "$PG_PROPS" "postgresql"
 
 # 2. Run RocksDB Benchmarks

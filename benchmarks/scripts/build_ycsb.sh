@@ -46,5 +46,9 @@ cp -r ycsb-jdbc-binding-0.18.0-SNAPSHOT/lib/* YCSB/lib/
 rm -rf ycsb-jdbc-binding-0.18.0-SNAPSHOT
 
 echo "YCSB built and extracted successfully!"
+# Download PostgreSQL JDBC Driver
+echo "Downloading PostgreSQL JDBC Driver..."
+python3 -c "import urllib.request; urllib.request.urlretrieve('https://jdbc.postgresql.org/download/postgresql-42.6.0.jar', 'YCSB/lib/postgresql-42.6.0.jar')"
+
 echo "YCSB binary is ready at: $PROJECT_ROOT/YCSB/bin/ycsb"
 echo "Bindings available: jdbc, rocksdb"

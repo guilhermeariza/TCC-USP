@@ -40,7 +40,7 @@ def run_ycsb(ycsb_dir, db_binding, workload, operation, threads, props, output_f
 def main():
     parser = argparse.ArgumentParser(description='Run YCSB Benchmark')
     parser.add_argument('--ycsb-dir', required=True, help='Path to YCSB directory')
-    parser.add_argument('--db', required=True, choices=['postgresql', 'rocksdb'], help='Database binding to use')
+    parser.add_argument('--db', required=True, choices=['postgresql', 'rocksdb', 'jdbc'], help='Database binding to use')
     parser.add_argument('--workload', required=True, help='Path to workload config file')
     parser.add_argument('--threads', type=int, default=1, help='Number of threads')
     parser.add_argument('--output-dir', required=True, help='Directory to save results')

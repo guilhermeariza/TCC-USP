@@ -1,0 +1,22 @@
+failed to get console mode for stdout: The handle is invalid.
+failed to get console mode for stdout: The handle is invalid.
+[1A[1B[0G[?25l[+] Creating 1/0
+ [32m✔[0m Container benchmarks-postgres-1  [32mRunning[0m[34m0.0s [0m
+[?25hfailed to get console mode for stdout: The handle is invalid.
+Aggregated Results:
+         DB    Workload  ...  Update_Avg_Lat  Update_P95_Lat
+0      jdbc  workload_a  ...             NaN             NaN
+1      jdbc  workload_a  ...             NaN             NaN
+2      jdbc  workload_a  ...             NaN             NaN
+3      jdbc  workload_a  ...     2702.572776         12863.0
+4      jdbc  workload_b  ...             NaN             NaN
+..      ...         ...  ...             ...             ...
+67  rocksdb  workload_f  ...             NaN             NaN
+68  rocksdb  workload_f  ...             NaN             NaN
+69  rocksdb  workload_f  ...             NaN             NaN
+70  rocksdb  workload_f  ...             NaN             NaN
+71  rocksdb  workload_f  ...       34.927444            69.0
+
+[72 rows x 7 columns]
+Generated throughput_comparison.png
+Generated read_latency_comparison.png
