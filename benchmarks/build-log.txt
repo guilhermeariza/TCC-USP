@@ -1,0 +1,133 @@
+#1 [benchmark internal] load .dockerignore
+#1 transferring context: 2B 0.0s done
+#1 DONE 0.0s
+
+#2 [benchmark internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.01kB done
+#2 DONE 0.0s
+
+#3 [benchmark internal] load metadata for docker.io/library/maven:3.8-openjdk-11-slim
+#3 DONE 1.6s
+
+#4 [benchmark 1/9] FROM docker.io/library/maven:3.8-openjdk-11-slim@sha256:2cb7c73ba2fd0f7ae64cfabd99180030ec85841a1197b4ae821d21836cb0aa3b
+#4 CACHED
+
+#5 [benchmark internal] load build context
+#5 transferring context: 650B done
+#5 DONE 0.0s
+
+#6 [benchmark 2/9] RUN apt-get update && apt-get install -y     python3     python3-pip     postgresql-client     git     build-essential     libgflags-dev     libsnappy-dev     zlib1g-dev     libbz2-dev     liblz4-dev     libzstd-dev     && rm -rf /var/lib/apt/lists/*
+#6 1.946 Get:1 http://deb.debian.org/debian bullseye InRelease [75.1 kB]
+#6 2.174 Get:2 http://deb.debian.org/debian-security bullseye-security InRelease [27.2 kB]
+#6 2.307 Get:3 http://deb.debian.org/debian bullseye-updates InRelease [44.0 kB]
+#6 2.361 Get:4 http://deb.debian.org/debian bullseye/main amd64 Packages [8066 kB]
+#6 4.319 Get:5 http://deb.debian.org/debian-security bullseye-security/main amd64 Packages [440 kB]
+#6 4.484 Get:6 http://deb.debian.org/debian bullseye-updates/main amd64 Packages [18.8 kB]
+#6 5.434 Fetched 8671 kB in 5s (1741 kB/s)
+#6 5.434 Reading package lists...
+#6 6.129 Reading package lists...
+#6 6.733 Building dependency tree...
+#6 6.895 Reading state information...
+#6 7.157 The following additional packages will be installed:
+#6 7.157   binutils binutils-common binutils-x86-64-linux-gnu bzip2 bzip2-doc cpp
+#6 7.157   cpp-10 dirmngr dpkg-dev fakeroot fontconfig-config fonts-dejavu-core g++
+#6 7.157   g++-10 gcc gcc-10 git-man gnupg gnupg-l10n gnupg-utils gpg gpg-agent
+#6 7.157   gpg-wks-client gpg-wks-server gpgconf gpgsm gpgv javascript-common less
+#6 7.157   libalgorithm-diff-perl libalgorithm-diff-xs-perl libalgorithm-merge-perl
+#6 7.157   libasan6 libassuan0 libatomic1 libbinutils libbsd0 libc-dev-bin
+#6 7.157   libc-devtools libc6 libc6-dev libcbor0 libcc1-0 libcrypt-dev libctf-nobfd0
+#6 7.157   libctf0 libcurl3-gnutls libdeflate0 libdpkg-perl libedit2 liberror-perl
+#6 7.157   libexpat1 libexpat1-dev libfakeroot libfido2-1 libfile-fcntllock-perl
+#6 7.157   libfontconfig1 libfreetype6 libgcc-10-dev libgd3 libgdbm-compat4 libgdbm6
+#6 7.158   libgflags2.2 libgomp1 libisl23 libitm1 libjbig0 libjpeg62-turbo libjs-jquery
+#6 7.158   libjs-sphinxdoc libjs-underscore libksba8 liblocale-gettext-perl liblsan0
+#6 7.158   libmd0 libmpc3 libmpdec3 libmpfr6 libnpth0 libnsl-dev libperl5.32
+#6 7.158   libpng16-16 libpq5 libpython3-dev libpython3-stdlib libpython3.9
+#6 7.158   libpython3.9-dev libpython3.9-minimal libpython3.9-stdlib libquadmath0
+#6 7.159   libreadline8 libsnappy1v5 libsqlite3-0 libstdc++-10-dev libtiff5
+#6 7.159   libtirpc-common libtirpc-dev libtirpc3 libtsan0 libubsan1 libwebp6 libx11-6
+#6 7.159   libx11-data libxau6 libxcb1 libxdmcp6 libxext6 libxmuu1 libxpm4
+#6 7.160   linux-libc-dev make manpages manpages-dev media-types netbase openssh-client
+#6 7.160   patch perl perl-base perl-modules-5.32 pinentry-curses postgresql-client-13
+#6 7.160   postgresql-client-common python-pip-whl python3-dev python3-distutils
+#6 7.160   python3-lib2to3 python3-minimal python3-pkg-resources python3-setuptools
+#6 7.160   python3-wheel python3.9 python3.9-dev python3.9-minimal readline-common
+#6 7.161   sensible-utils ucf xauth xz-utils zlib1g
+#6 7.163 Suggested packages:
+#6 7.163   binutils-doc cpp-doc gcc-10-locales dbus-user-session libpam-systemd
+#6 7.163   pinentry-gnome3 tor debian-keyring g++-multilib g++-10-multilib gcc-10-doc
+#6 7.163   gcc-multilib autoconf automake libtool flex bison gdb gcc-doc
+#6 7.163   gcc-10-multilib gettext-base git-daemon-run | git-daemon-sysvinit git-doc
+#6 7.163   git-el git-email git-gui gitk gitweb git-cvs git-mediawiki git-svn
+#6 7.163   parcimonie xloadimage scdaemon apache2 | lighttpd | httpd glibc-doc
+#6 7.163   libc-l10n locales bzr libgd-tools gdbm-l10n libstdc++-10-doc make-doc
+#6 7.163   man-browser keychain libpam-ssh monkeysphere ssh-askpass ed diffutils-doc
+#6 7.163   perl-doc libterm-readline-gnu-perl | libterm-readline-perl-perl
+#6 7.163   libtap-harness-archive-perl pinentry-doc postgresql-13 postgresql-doc-13
+#6 7.163   python3-doc python3-tk python3-venv python-setuptools-doc python3.9-venv
+#6 7.163   python3.9-doc binfmt-support readline-doc
+#6 7.163 Recommended packages:
+#6 7.163   libnss-nis libnss-nisplus
+#6 7.821 The following NEW packages will be installed:
+#6 7.821   binutils binutils-common binutils-x86-64-linux-gnu build-essential bzip2
+#6 7.822   bzip2-doc cpp cpp-10 dirmngr dpkg-dev fakeroot fontconfig-config
+#6 7.822   fonts-dejavu-core g++ g++-10 gcc gcc-10 git git-man gnupg gnupg-l10n
+#6 7.822   gnupg-utils gpg gpg-agent gpg-wks-client gpg-wks-server gpgconf gpgsm
+#6 7.822   javascript-common less libalgorithm-diff-perl libalgorithm-diff-xs-perl
+#6 7.822   libalgorithm-merge-perl libasan6 libassuan0 libatomic1 libbinutils libbsd0
+#6 7.822   libbz2-dev libc-dev-bin libc-devtools libc6-dev libcbor0 libcc1-0
+#6 7.822   libcrypt-dev libctf-nobfd0 libctf0 libcurl3-gnutls libdeflate0 libdpkg-perl
+#6 7.822   libedit2 liberror-perl libexpat1 libexpat1-dev libfakeroot libfido2-1
+#6 7.823   libfile-fcntllock-perl libfontconfig1 libfreetype6 libgcc-10-dev libgd3
+#6 7.823   libgdbm-compat4 libgdbm6 libgflags-dev libgflags2.2 libgomp1 libisl23
+#6 7.823   libitm1 libjbig0 libjpeg62-turbo libjs-jquery libjs-sphinxdoc
+#6 7.823   libjs-underscore libksba8 liblocale-gettext-perl liblsan0 liblz4-dev libmd0
+#6 7.823   libmpc3 libmpdec3 libmpfr6 libnpth0 libnsl-dev libperl5.32 libpng16-16
+#6 7.823   libpq5 libpython3-dev libpython3-stdlib libpython3.9 libpython3.9-dev
+#6 7.824   libpython3.9-minimal libpython3.9-stdlib libquadmath0 libreadline8
+#6 7.824   libsnappy-dev libsnappy1v5 libsqlite3-0 libstdc++-10-dev libtiff5
+#6 7.824   libtirpc-dev libtsan0 libubsan1 libwebp6 libx11-6 libx11-data libxau6
+#6 7.824   libxcb1 libxdmcp6 libxext6 libxmuu1 libxpm4 libzstd-dev linux-libc-dev make
+#6 7.824   manpages manpages-dev media-types netbase openssh-client patch perl
+#6 7.824   perl-modules-5.32 pinentry-curses postgresql-client postgresql-client-13
+#6 7.825   postgresql-client-common python-pip-whl python3 python3-dev
+#6 7.825   python3-distutils python3-lib2to3 python3-minimal python3-pip
+#6 7.825   python3-pkg-resources python3-setuptools python3-wheel python3.9
+#6 7.825   python3.9-dev python3.9-minimal readline-common sensible-utils ucf xauth
+#6 7.825   xz-utils zlib1g-dev
+#6 7.826 The following packages will be upgraded:
+#6 7.828   gpgv libc6 libtirpc-common libtirpc3 perl-base zlib1g
+#6 7.951 6 upgraded, 145 newly installed, 0 to remove and 48 not upgraded.
+#6 7.951 Need to get 121 MB of archives.
+#6 7.951 After this operation, 427 MB of additional disk space will be used.
+#6 7.951 Get:1 http://deb.debian.org/debian-security bullseye-security/main amd64 perl-base amd64 5.32.1-4+deb11u4 [1629 kB]
+#6 8.371 Get:2 http://deb.debian.org/debian-security bullseye-security/main amd64 perl-modules-5.32 all 5.32.1-4+deb11u4 [2824 kB]
+#6 9.378 Get:3 http://deb.debian.org/debian-security bullseye-security/main amd64 libc6 amd64 2.31-13+deb11u13 [2823 kB]
+#6 10.06 Get:4 http://deb.debian.org/debian bullseye/main amd64 libgdbm6 amd64 1.19-2 [64.9 kB]
+#6 10.36 Get:5 http://deb.debian.org/debian bullseye/main amd64 libgdbm-compat4 amd64 1.19-2 [44.7 kB]
+#6 10.43 Get:6 http://deb.debian.org/debian bullseye/main amd64 zlib1g amd64 1:1.2.11.dfsg-2+deb11u2 [91.4 kB]
+#6 12.73 Get:7 http://deb.debian.org/debian-security bullseye-security/main amd64 libperl5.32 amd64 5.32.1-4+deb11u4 [4132 kB]
+#6 44.58 Get:8 http://deb.debian.org/debian-security bullseye-security/main amd64 perl amd64 5.32.1-4+deb11u4 [293 kB]
+#6 44.93 Get:9 http://deb.debian.org/debian bullseye/main amd64 liblocale-gettext-perl amd64 1.07-4+b1 [19.0 kB]
+#6 45.06 Get:10 http://deb.debian.org/debian-security bullseye-security/main amd64 libpython3.9-minimal amd64 3.9.2-1+deb11u3 [805 kB]
+#6 45.55 Get:11 http://deb.debian.org/debian-security bullseye-security/main amd64 libexpat1 amd64 2.2.10-2+deb11u7 [99.2 kB]
+#6 105.7 Err:12 http://deb.debian.org/debian-security bullseye-security/main amd64 python3.9-minimal amd64 3.9.2-1+deb11u3
+#6 105.7   Connection failed [IP: 151.101.250.132 80]
+#6 105.7 Get:13 http://deb.debian.org/debian bullseye/main amd64 python3-minimal amd64 3.9.2-3 [38.2 kB]
+#6 136.1 Get:14 http://deb.debian.org/debian bullseye/main amd64 media-types all 4.0.0 [30.3 kB]
+#6 136.4 Get:15 http://deb.debian.org/debian bullseye/main amd64 libmpdec3 amd64 2.5.1-1 [87.7 kB]
+#6 136.5 Get:16 http://deb.debian.org/debian bullseye/main amd64 readline-common all 8.1-1 [73.7 kB]
+#6 136.5 Get:17 http://deb.debian.org/debian bullseye/main amd64 libreadline8 amd64 8.1-1 [169 kB]
+#6 167.1 Get:18 http://deb.debian.org/debian-security bullseye-security/main amd64 libsqlite3-0 amd64 3.34.1-3+deb11u1 [797 kB]
+#6 167.3 Get:19 http://deb.debian.org/debian bullseye/main amd64 libtirpc-common all 1.3.1-1+deb11u1 [13.5 kB]
+#6 167.4 Get:20 http://deb.debian.org/debian bullseye/main amd64 libtirpc3 amd64 1.3.1-1+deb11u1 [84.1 kB]
+#6 197.8 Get:21 http://deb.debian.org/debian-security bullseye-security/main amd64 libpython3.9-stdlib amd64 3.9.2-1+deb11u3 [1684 kB]
+#6 198.3 Get:22 http://deb.debian.org/debian-security bullseye-security/main amd64 python3.9 amd64 3.9.2-1+deb11u3 [467 kB]
+#6 198.6 Get:23 http://deb.debian.org/debian bullseye/main amd64 libpython3-stdlib amd64 3.9.2-3 [21.4 kB]
+#6 229.1 Get:24 http://deb.debian.org/debian bullseye/main amd64 python3 amd64 3.9.2-3 [37.9 kB]
+#6 229.5 Get:25 http://deb.debian.org/debian-security bullseye-security/main amd64 gpgv amd64 2.2.27-2+deb11u3 [626 kB]
+#6 229.8 Get:26 http://deb.debian.org/debian bullseye/main amd64 less amd64 551-2+deb11u2 [136 kB]
+#6 229.9 Get:27 http://deb.debian.org/debian bullseye/main amd64 netbase all 6.3 [19.9 kB]
+#6 230.1 Get:28 http://deb.debian.org/debian bullseye/main amd64 sensible-utils all 0.0.14 [14.8 kB]
+#6 230.2 Get:29 http://deb.debian.org/debian bullseye/main amd64 bzip2 amd64 1.0.8-4 [49.3 kB]
+#6 260.9 Get:30 http://deb.debian.org/debian bullseye/main amd64 manpages all 5.10-1 [1412 kB]

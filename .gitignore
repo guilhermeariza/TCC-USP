@@ -1,0 +1,55 @@
+# Benchmark Results
+benchmarks/results/
+benchmarks/analysis/charts/
+
+# Docker volumes and data
+benchmarks/pgdata/
+
+# YCSB build artifacts
+benchmarks/YCSB/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Logs
+*.log
+benchmark_execution.log
+
+# Docker
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Claude settings (keep only template)
+.claude/settings.local.json
+.claude/projects/
+.claude/tool-results/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Environment files
+.env
+.env.local

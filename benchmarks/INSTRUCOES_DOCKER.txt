@@ -1,0 +1,38 @@
+==============================================================================
+INSTRUÇÕES DE EXECUÇÃO COM DOCKER (RECOMENDADO)
+==============================================================================
+
+O projeto agora suporta execução totalmente automatizada via Docker.
+Isso evita a necessidade de instalar Java, Maven, Postgres ou Python manualmente.
+
+PRÉ-REQUISITOS:
+- Docker Desktop instalado e rodando.
+
+PASSO A PASSO:
+
+1. Abra o terminal (PowerShell ou CMD) na pasta 'benchmarks':
+   cd "c:\Users\USER\OneDrive\Documentos\TCC-PÓS\Projeto\benchmarks"
+
+2. Construa e inicie os containers:
+   docker-compose up --build
+
+   O que vai acontecer:
+   - O Docker vai baixar o Postgres.
+   - Vai construir uma imagem com Java, Python e YCSB.
+   - Vai compilar o YCSB automaticamente.
+   - Vai iniciar o banco de dados.
+   - Vai rodar TODOS os testes (Workloads A-F para Postgres e RocksDB).
+   - Vai gerar os gráficos de análise.
+
+3. Onde estão os resultados?
+   Após o término (pode levar algum tempo), verifique as pastas:
+   - benchmarks/results: Logs brutos.
+   - benchmarks/analysis/charts: Gráficos gerados.
+
+4. Para limpar tudo (parar containers):
+   docker-compose down
+
+==============================================================================
+EXECUÇÃO MANUAL (SEM DOCKER)
+==============================================================================
+Caso prefira rodar manualmente no Linux/WSL, consulte o arquivo README.md.

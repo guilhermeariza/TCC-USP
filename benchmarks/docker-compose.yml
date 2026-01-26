@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: ycsb
+      POSTGRES_PASSWORD: ycsb
+      POSTGRES_DB: ycsb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ycsb" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  benchmark:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./results:/app/results
+      - ./analysis:/app/analysis
+    environment:
+      PG_HOST: postgres
+      PG_PORT: 5432
+    # The entrypoint script will run the benchmarks
+
+volumes:
+  pgdata:

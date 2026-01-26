@@ -1,0 +1,46 @@
+==============================================================================
+INSTRUÇÕES DE EXECUÇÃO DO PROJETO
+==============================================================================
+
+O projeto foi totalmente configurado. Devido a restrições de segurança, eu não posso
+executar comandos diretamente no seu terminal Linux (WSL).
+
+Siga estes passos para rodar os benchmarks:
+
+1. ABRA O TERMINAL WSL (Ubuntu/Debian)
+   Navegue até a pasta do projeto:
+   $ cd "/mnt/c/Users/USER/OneDrive/Documentos/TCC-PÓS/Projeto/benchmarks"
+
+2. INSTALE AS DEPENDÊNCIAS
+   Execute o script de setup:
+   $ chmod +x scripts/setup.sh
+   $ ./scripts/setup.sh
+
+3. CONSTRUA O YCSB (COM ROCKSDB)
+   Isso vai baixar e compilar o YCSB automaticamente:
+   $ chmod +x scripts/build_ycsb.sh
+   $ ./scripts/build_ycsb.sh
+
+4. CONFIGURE O POSTGRESQL
+   Inicie o banco e crie as tabelas:
+   $ sudo service postgresql start
+   $ sudo -u postgres psql -f scripts/setup_db.sql
+
+5. EXECUTE OS BENCHMARKS
+   Este script vai rodar todos os workloads (A-F) no Postgres e no RocksDB:
+   $ chmod +x scripts/run_all.sh
+   $ ./scripts/run_all.sh
+
+   (Isso pode levar vários minutos/horas dependendo do hardware)
+
+6. ANALISE OS RESULTADOS
+   Gere os gráficos comparativos:
+   $ pip3 install -r analysis/requirements.txt
+   $ python3 analysis/analyze_results.py results/
+
+   Os gráficos estarão na pasta 'analysis/charts'.
+
+==============================================================================
+DÚVIDAS?
+Consulte o arquivo README.md ou walkthrough.md para mais detalhes.
+==============================================================================

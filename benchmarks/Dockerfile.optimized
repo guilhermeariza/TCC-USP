@@ -1,0 +1,67 @@
+# Multi-stage Dockerfile for better caching and faster builds
+
+# Stage 1: Base with system dependencies
+FROM maven:3.8-openjdk-11-slim AS base
+
+# Configure APT for retries and timeouts
+RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::http::Timeout "30";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::ftp::Timeout "30";' >> /etc/apt/apt.conf.d/80-retries
+
+# Install system dependencies in one layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3=3.9.2-3 \
+    python3-pip=20.3.4-4+deb11u1 \
+    postgresql-client=13+225 \
+    git=1:2.30.2-1+deb11u2 \
+    build-essential=12.9 \
+    libgflags-dev=2.2.2-2 \
+    libsnappy-dev=1.1.8-1 \
+    zlib1g-dev=1:1.2.11.dfsg-2+deb11u2 \
+    libbz2-dev=1.0.8-4 \
+    liblz4-dev=1.9.3-2 \
+    libzstd-dev=1.4.8+dfsg-2.1 \
+    wget=1.21-1+deb11u1 \
+    curl=7.74.0-1.3+deb11u15 \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Stage 2: Python dependencies
+FROM base AS python-builder
+RUN pip3 install --no-cache-dir --upgrade pip==21.0.1 && \
+    pip3 install --no-cache-dir \
+    pandas==1.3.5 \
+    matplotlib==3.5.3 \
+    numpy==1.21.6
+
+# Stage 3: YCSB builder
+FROM python-builder AS ycsb-builder
+WORKDIR /build
+
+# Copy only the build script first
+COPY scripts/build_ycsb.sh /build/
+RUN chmod +x /build/build_ycsb.sh
+
+# Build YCSB (this will be cached unless build_ycsb.sh changes)
+RUN /build/build_ycsb.sh
+
+# Stage 4: Final runtime image
+FROM python-builder AS final
+WORKDIR /app
+
+# Copy YCSB from builder stage
+COPY --from=ycsb-builder /build/YCSB /app/YCSB
+
+# Copy application files
+COPY scripts/ /app/scripts/
+COPY configs/ /app/configs/
+COPY analysis/ /app/analysis/
+
+# Make scripts executable
+RUN chmod +x /app/scripts/*.sh
+
+# Create results directory
+RUN mkdir -p /app/results
+
+# Set entrypoint
+ENTRYPOINT ["/app/scripts/docker_entrypoint.sh"]

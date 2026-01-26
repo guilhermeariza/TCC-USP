@@ -1,0 +1,38 @@
+FROM maven:3.8-openjdk-11-slim
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    postgresql-client \
+    git \
+    build-essential \
+    libgflags-dev \
+    libsnappy-dev \
+    zlib1g-dev \
+    libbz2-dev \
+    liblz4-dev \
+    libzstd-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies for analysis
+RUN pip3 install pandas matplotlib
+
+WORKDIR /app
+
+# Copy scripts and configs
+COPY scripts/ /app/scripts/
+COPY configs/ /app/configs/
+COPY analysis/ /app/analysis/
+
+# Make scripts executable
+RUN chmod +x /app/scripts/*.sh
+
+# Build YCSB (Clone and Build)
+# We do this in the image build to save time on run, 
+# but we can also do it in entrypoint if we want to ensure latest code.
+# Let's do it here to make the image ready-to-go.
+RUN ./scripts/build_ycsb.sh
+
+# Entrypoint will be defined in docker-compose or here
+ENTRYPOINT ["/app/scripts/docker_entrypoint.sh"]
