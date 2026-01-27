@@ -12,6 +12,11 @@ echo "PostgreSQL is up - executing setup..."
 # Setup Database Schema
 PGPASSWORD=ycsb psql -h "$PG_HOST" -U "ycsb" -d "ycsb" -f scripts/setup_db.sql
 
+# If command arguments are provided, execute them
+if [ "$#" -gt 0 ]; then
+    exec "$@"
+fi
+
 # Run Benchmarks
 echo "Starting Benchmarks..."
 
@@ -39,6 +44,11 @@ run_workloads() {
 
     for workload in configs/workload_*; do
         workload_name=$(basename "$workload")
+        ADDITIONAL_ARGS=""
+        if [ "$workload_name" != "workload_a" ]; then
+            ADDITIONAL_ARGS="--skip-load"
+        fi
+
         echo "Running $workload_name on $DB..."
         
         python3 scripts/run_benchmark.py \
@@ -46,7 +56,8 @@ run_workloads() {
             --db "$DB" \
             --workload "$workload" \
             --output-dir "$RESULTS_DIR/$OUTPUT_SUBDIR" \
-            --db-props "$DB_PROPS"
+            --db-props "$DB_PROPS" \
+            $ADDITIONAL_ARGS
             
         echo "Finished $workload_name on $DB"
     done

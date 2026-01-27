@@ -6,23 +6,32 @@ import datetime
 
 def run_command(command, cwd=None, output_file=None):
     print(f"Executing: {command}")
-    process = subprocess.Popen(command, shell=True, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    stdout, _ = process.communicate()
-
-    # Save output to file if specified
+    
     if output_file:
         output_dir = os.path.dirname(output_file)
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
-        with open(output_file, 'wb') as f:
-            f.write(stdout)
+        with open(output_file, 'w') as f:
+            process = subprocess.Popen(command, shell=True, cwd=cwd, stdout=f, stderr=subprocess.STDOUT)
+            process.wait()
+            retcode = process.returncode
+            return "" # stats are in file
+    else:
+        # Stream to stdout if no file
+        process = subprocess.Popen(command, shell=True, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        output = []
+        for line in iter(process.stdout.readline, b''):
+            line_str = line.decode()
+            print(line_str, end='')
+            output.append(line_str)
+        process.wait()
+        retcode = process.returncode
+        return "".join(output)
 
-    if process.returncode != 0:
+    if retcode != 0:
         print(f"Error executing command: {command}")
-        if not output_file:
-            print(stdout.decode())
         return False
-    return stdout.decode()
+    return "Success"
 
 def run_ycsb(ycsb_dir, db_binding, workload, operation, threads, props, output_file):
     ycsb_bin = os.path.join(ycsb_dir, "bin", "ycsb")
@@ -45,6 +54,7 @@ def main():
     parser.add_argument('--threads', type=int, default=1, help='Number of threads')
     parser.add_argument('--output-dir', required=True, help='Directory to save results')
     parser.add_argument('--db-props', default='', help='Additional DB properties (e.g., "-p rocksdb.dir=/tmp/rocksdb")')
+    parser.add_argument('--skip-load', action='store_true', help='Skip the LOAD phase')
 
     args = parser.parse_args()
 
@@ -55,9 +65,12 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
 
     # Load Phase
-    print(f"Starting LOAD phase for {args.db} with {workload_name}...")
-    load_output = os.path.join(args.output_dir, f"{args.db}_{workload_name}_load_{timestamp}.log")
-    run_ycsb(args.ycsb_dir, args.db, args.workload, 'load', args.threads, args.db_props, load_output)
+    if not args.skip_load:
+        print(f"Starting LOAD phase for {args.db} with {workload_name}...")
+        load_output = os.path.join(args.output_dir, f"{args.db}_{workload_name}_load_{timestamp}.log")
+        run_ycsb(args.ycsb_dir, args.db, args.workload, 'load', args.threads, args.db_props, load_output)
+    else:
+        print(f"Skipping LOAD phase for {args.db} with {workload_name}...")
     
     # Run Phase
     print(f"Starting RUN phase for {args.db} with {workload_name}...")
