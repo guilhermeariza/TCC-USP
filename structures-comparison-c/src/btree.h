@@ -2,8 +2,13 @@
 #define BTREE_H
 
 #include <stdint.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <stdatomic.h>
+
+extern _Atomic uint64_t physical_bytes_written;
+extern _Atomic uint64_t logical_bytes_written;
 
 typedef struct BTreeNode BTreeNode;
 

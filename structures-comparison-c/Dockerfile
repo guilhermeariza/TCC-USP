@@ -10,7 +10,7 @@ WORKDIR /app
 COPY src/* /app/
 
 # Build
-RUN gcc -O3 -o benchmark main.c btree.c lsm.c
+RUN gcc -O3 -pthread -o benchmark main.c btree.c lsm.c
 
 # Run
 CMD ["./benchmark"]

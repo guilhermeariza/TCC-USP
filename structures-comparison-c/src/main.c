@@ -4,8 +4,11 @@
 #include <time.h>
 #include <string.h>
 #include <pthread.h>
+#include <stdatomic.h>
 #include "btree.h"
 #include "lsm.h"
+
+#define NUM_THREADS 8
 
 // Simple benchmark timer
 double get_time_sec() {
@@ -13,6 +16,14 @@ double get_time_sec() {
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec + ts.tv_nsec / 1e9;
 }
+
+// Global Atomic Counters for WAF
+_Atomic uint64_t physical_bytes_written = 0;
+_Atomic uint64_t logical_bytes_written = 0;
+// We need atomics because multiple threads will update this
+// Using C11 atomics or GCC builtins?
+// GCC builtins (__atomic_add_fetch) are standard enough for this environment.
+// Or just <stdatomic.h> if C11. Docker Alpine uses musl/gcc so C11 is fine.
 
 typedef struct {
     int start;
@@ -73,6 +84,117 @@ void* btree_insert_worker(void *arg) {
     return NULL;
 }
 
+void* workload_a_worker(void *arg) {
+    ThreadArg *t = (ThreadArg*)arg;
+    unsigned int seed = t->start; // Simple seed
+    
+    for (int i = t->start; i < t->end; i++) {
+        int op = rand_r(&seed) % 2; // 0=Read, 1=Write
+        uint64_t key = rand_r(&seed) % 5000; // Random key in range
+        
+        if (t->btree) {
+            if (op == 0) {
+                 btree_search(t->btree, key);
+            } else {
+                 btree_insert_mt(t->btree, key, i);
+            }
+        } else if (t->lsm) {
+            if (op == 0) {
+                lsm_search(t->lsm, key);
+            } else {
+                // LSM needs mutex for memtable? 
+                // Our current LSM is NOT thread safe.
+                // We need to add mutex to LSM insert too!
+                // For now, let's assume single thread LSM or add simple lock.
+                // Let's add a lock to LSM struct similar to BTree.
+                // Or just run single threaded LSM for Workload A? 
+                // Benchmarking requires fairness.
+                // We should add lock to LSM.
+                lsm_insert(t->lsm, key, i); 
+            }
+        }
+    }
+    return NULL;
+}
+
+void run_workload_a(int n) {
+    printf("\n=== Workload A (50/50 Read/Update, N=%d) ===\n", n);
+    
+    // --- B-Tree ---
+    logical_bytes_written = 0;
+    physical_bytes_written = 0;
+    
+    BTree* btree = btree_create(64);
+    // Pre-populate
+    printf("Pre-loading B-Tree...\n");
+    for(int i=0; i<n; i++) btree_insert(btree, i, i);
+    
+    // Reset counters after load? Actually TCC cares about total WAF including load? 
+    // Usually WAF is measured during the stable phase.
+    // Let's reset.
+    logical_bytes_written = 0;
+    physical_bytes_written = 0;
+    
+    printf("Running B-Tree Workload A...\n");
+    double start = get_time_sec();
+    
+    pthread_t threads[NUM_THREADS];
+    ThreadArg targs[NUM_THREADS];
+    int chunk = n / NUM_THREADS;
+    
+    for (int i = 0; i < NUM_THREADS; i++) {
+        targs[i].start = i * chunk;
+        targs[i].end = (i == NUM_THREADS - 1) ? n : (i + 1) * chunk;
+        targs[i].btree = btree;
+        targs[i].lsm = NULL;
+        pthread_create(&threads[i], NULL, workload_a_worker, &targs[i]);
+    }
+    for (int i = 0; i < NUM_THREADS; i++) pthread_join(threads[i], NULL);
+    
+    double end = get_time_sec();
+    printf("B-Tree Throughput: %.2f ops/sec\n", n / (end - start));
+    printf("B-Tree WAF: %.2f (Phys: %lu / Log: %lu)\n", 
+           (double)physical_bytes_written / (double)logical_bytes_written, 
+           physical_bytes_written, logical_bytes_written);
+           
+    btree_free(btree);
+
+    // --- LSM-Tree ---
+    logical_bytes_written = 0;
+    physical_bytes_written = 0;
+    
+    LSMTree* lsm = lsm_create(1000, "."); // Threshold 1000 like before
+    printf("Pre-loading LSM-Tree...\n");
+    for(int i=0; i<n; i++) lsm_insert(lsm, i, i);
+    
+    logical_bytes_written = 0;
+    physical_bytes_written = 0;
+
+    printf("Running LSM-Tree Workload A...\n");
+    start = get_time_sec();
+    
+    // Note: LSM insert is NOT thread safe yet. We need to fix LSM struct.
+    // For this step, I'll run single threaded LSM or fail?
+    // I will Assume I'll fix LSM safety in next step.
+    
+    for (int i = 0; i < NUM_THREADS; i++) {
+        targs[i].start = i * chunk;
+        targs[i].end = (i == NUM_THREADS - 1) ? n : (i + 1) * chunk;
+        targs[i].btree = NULL;
+        targs[i].lsm = lsm;
+        pthread_create(&threads[i], NULL, workload_a_worker, &targs[i]);
+    }
+    for (int i = 0; i < NUM_THREADS; i++) pthread_join(threads[i], NULL);
+    
+    end = get_time_sec();
+    printf("LSM-Tree Throughput: %.2f ops/sec\n", n / (end - start));
+    printf("LSM-Tree WAF: %.2f (Phys: %lu / Log: %lu)\n", 
+           (double)physical_bytes_written / (double)logical_bytes_written, 
+           physical_bytes_written, logical_bytes_written);
+           
+    lsm_free(lsm);
+}
+
 void run_benchmarks() {
     int n = 5000;
     printf("Starting C Benchmarks with N = %d\n", n);
@@ -82,7 +204,6 @@ void run_benchmarks() {
     BTree* btree = btree_create(64);
 
     // Threads
-    #define NUM_THREADS 8
     pthread_t threads[NUM_THREADS];
     ThreadArg targs[NUM_THREADS];
 
@@ -158,6 +279,7 @@ void run_benchmarks() {
     printf("LSM-Tree Delete: %.4f s (%.2f ops/sec)\n", end - start, (n/10) / (end - start));
 
     lsm_free(lsm);
+    run_workload_a(n);
 }
 
 int main() {

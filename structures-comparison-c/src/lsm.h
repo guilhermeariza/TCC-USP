@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdatomic.h>
+
+extern _Atomic uint64_t physical_bytes_written;
+extern _Atomic uint64_t logical_bytes_written;
 
 typedef struct LSMTree LSMTree;
 
