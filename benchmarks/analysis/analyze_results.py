@@ -52,7 +52,8 @@ def main():
     print(df)
 
     # Generate Charts
-    os.makedirs("analysis/charts", exist_ok=True)
+    charts_dir = os.path.join(results_dir, "analysis", "charts")
+    os.makedirs(charts_dir, exist_ok=True)
     
     # Throughput Comparison
     # Filter out 0 throughput (failed runs)
@@ -68,8 +69,9 @@ def main():
     plt.title('Throughput Comparison (Ops/sec)')
     plt.ylabel('Throughput (ops/sec)')
     plt.tight_layout()
-    plt.savefig('analysis/charts/throughput_comparison.png')
-    print("Generated throughput_comparison.png")
+    throughput_path = os.path.join(charts_dir, 'throughput_comparison.png')
+    plt.savefig(throughput_path)
+    print(f"Generated {throughput_path}")
 
     # Latency Comparison (Read Avg)
     if 'Read_Avg_Lat' in df.columns:
@@ -78,8 +80,9 @@ def main():
         plt.title('Read Average Latency Comparison')
         plt.ylabel('Latency (us)')
         plt.tight_layout()
-        plt.savefig('analysis/charts/read_latency_comparison.png')
-        print("Generated read_latency_comparison.png")
+        latency_path = os.path.join(charts_dir, 'read_latency_comparison.png')
+        plt.savefig(latency_path)
+        print(f"Generated {latency_path}")
 
 if __name__ == "__main__":
     main()

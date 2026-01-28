@@ -21,6 +21,7 @@ services:
       postgres:
         condition: service_healthy
     volumes:
+      - ./runs:/app/runs
       - ./results:/app/results
       - ./analysis:/app/analysis
       - ./scripts:/app/scripts

@@ -28,9 +28,29 @@ echo "Starting Benchmarks..."
 # Let's create a specific run command here or make run_all.sh smart.
 # For now, I will patch run_all.sh in the container or just run the logic here.
 
-# Define directories
-RESULTS_DIR="results"
-mkdir -p $RESULTS_DIR
+# Base directory for all runs
+BASE_RUNS_DIR="runs"
+mkdir -p $BASE_RUNS_DIR
+
+# Logic to calculate the next run ID
+LAST_RUN=$(ls -d $BASE_RUNS_DIR/run_* 2>/dev/null | sort | tail -n 1)
+if [ -z "$LAST_RUN" ]; then
+    NEXT_NUM=1
+else
+    LAST_NUM=$(basename "$LAST_RUN" | cut -d'_' -f2 | sed 's/^0*//')
+    NEXT_NUM=$((LAST_NUM + 1))
+fi
+
+# Format with leading zeros and timestamp
+RUN_ID=$(printf "run_%03d_%s" $NEXT_NUM "$(date +%Y%m%d_%H%M%S)")
+RUN_DIR="$BASE_RUNS_DIR/$RUN_ID"
+mkdir -p "$RUN_DIR"
+
+echo "================================================================"
+echo "Starting Benchmark Run: $RUN_ID"
+echo "Results will be saved to: $RUN_DIR"
+echo "================================================================"
+
 YCSB_DIR="./YCSB"
 
 # Function to run workloads
@@ -40,7 +60,8 @@ run_workloads() {
     OUTPUT_SUBDIR=$3
 
     echo "Starting benchmarks for $DB..."
-    mkdir -p "$RESULTS_DIR/$OUTPUT_SUBDIR"
+    CURRENT_OUTPUT_DIR="$RUN_DIR/results/$OUTPUT_SUBDIR"
+    mkdir -p "$CURRENT_OUTPUT_DIR"
 
     for workload in configs/workload_*; do
         workload_name=$(basename "$workload")
@@ -55,7 +76,7 @@ run_workloads() {
             --ycsb-dir "$YCSB_DIR" \
             --db "$DB" \
             --workload "$workload" \
-            --output-dir "$RESULTS_DIR/$OUTPUT_SUBDIR" \
+            --output-dir "$CURRENT_OUTPUT_DIR" \
             --db-props "$DB_PROPS" \
             $ADDITIONAL_ARGS
             
@@ -68,9 +89,9 @@ PG_PROPS="-p db.driver=org.postgresql.Driver -p db.url=jdbc:postgresql://$PG_HOS
 run_workloads "jdbc" "$PG_PROPS" "postgresql"
 
 # 2. Run RocksDB Benchmarks
-# RocksDB is embedded, so it runs locally in the container
 ROCKS_DB_DIR="/tmp/rocksdb_data"
 mkdir -p $ROCKS_DB_DIR
+rm -rf "$ROCKS_DB_DIR"/*
 ROCKS_PROPS="-p rocksdb.dir=$ROCKS_DB_DIR"
 run_workloads "rocksdb" "$ROCKS_PROPS" "rocksdb"
 
@@ -78,6 +99,6 @@ echo "Benchmarks Completed."
 
 # 3. Run Analysis
 echo "Generating Analysis..."
-python3 analysis/analyze_results.py results/
+python3 analysis/analyze_results.py "$RUN_DIR"
 
-echo "Done! Results are in the 'results' folder and charts in 'analysis/charts'."
+echo "Done! Full records (results and charts) are in: $RUN_DIR"
