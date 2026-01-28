@@ -1,8 +1,11 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <dirent.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "lsm.h"
 
 // Basic MemTable Node (BST)
@@ -48,12 +51,35 @@ void mn_free(MemNode* root) {
     free(root);
 }
 
-// In-order traversal to flush
-void mn_flush_rec(MemNode* node, FILE* f) {
+// Helper for aligned alloc (duplicate from btree.c for now or move to util)
+void* lsm_alloc_aligned(size_t size) {
+    void *ptr;
+#ifdef __linux__
+    if (posix_memalign(&ptr, 4096, size) != 0) return NULL;
+#else
+    ptr = malloc(size);
+#endif
+    return ptr;
+}
+
+void mn_flush_rec_buf(MemNode* node, char* buffer, size_t* offset, size_t limit, int fd) {
     if (!node) return;
-    mn_flush_rec(node->left, f);
-    fprintf(f, "%lu %lu %d\n", node->key, node->value, node->is_tombstone);
-    mn_flush_rec(node->right, f);
+    mn_flush_rec_buf(node->left, buffer, offset, limit, fd);
+    
+    // Format line
+    char line[128];
+    int len = snprintf(line, sizeof(line), "%lu %lu %d\n", node->key, node->value, node->is_tombstone);
+    
+    if (*offset + len > limit) {
+        // Fluxh buffer
+        write(fd, buffer, limit); // Assume limit is 4KB aligned
+        memset(buffer, 0, limit);
+        *offset = 0;
+    }
+    memcpy(buffer + *offset, line, len);
+    *offset += len;
+
+    mn_flush_rec_buf(node->right, buffer, offset, limit, fd);
 }
 
 LSMTree* lsm_create(size_t threshold, const char* data_dir) {
@@ -73,11 +99,37 @@ void lsm_flush(LSMTree* t) {
     clock_gettime(CLOCK_REALTIME, &ts);
     snprintf(path, sizeof(path), "%s/sst_%ld_%ld.txt", t->data_dir, ts.tv_sec, ts.tv_nsec);
     
-    FILE *f = fopen(path, "w");
-    if (f) {
-        mn_flush_rec(t->memtable_root, f);
-        fclose(f);
+    // Open with O_DIRECT
+    int fd;
+#ifdef __linux__
+    fd = open(path, O_RDWR | O_CREAT | O_DIRECT, 0666);
+#else
+    fd = open(path, O_RDWR | O_CREAT, 0666);
+#endif
+    if (fd == -1) {
+        perror("LSM Flush open failed");
+        return;
     }
+
+    // Allocate 4KB aligned buffer
+    size_t buf_size = 4096 * 4; // 16KB buffer
+    char *buffer = (char*)lsm_alloc_aligned(buf_size);
+    memset(buffer, 0, buf_size);
+    size_t offset = 0;
+
+    mn_flush_rec_buf(t->memtable_root, buffer, &offset, buf_size, fd);
+    
+    // Final flush (must be aligned block size, so we pad with 0s)
+    if (offset > 0) {
+        // Already zeroed rest? Yes mostly, but logic above doesn't zero after copy.
+        // Actually we do memset 0 on full flush.
+        // For final partial block, we just write the full aligned block.
+        write(fd, buffer, buf_size); 
+    }
+
+    close(fd);
+    free(buffer);
+
     mn_free(t->memtable_root);
     t->memtable_root = NULL;
     t->size = 0;
