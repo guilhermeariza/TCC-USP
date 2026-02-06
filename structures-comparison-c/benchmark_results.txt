@@ -1,0 +1,22 @@
+Starting C Benchmarks with N = 5000
+
+=== B-Tree Benchmark (Direct I/O, N=5000) ===
+Starting 8 threads for B-Tree Insert...
+B-Tree Insert: 1.0580 s (4725.80 ops/sec)
+B-Tree Search: 0.0003 s (18360145.26 ops/sec)
+B-Tree Delete: 0.0000 s (665778959.84 ops/sec)
+
+=== LSM-Tree Benchmark ===
+LSM-Tree Insert: 0.0104 s (478946.88 ops/sec)
+LSM-Tree Search: 1.4864 s (3363.72 ops/sec)
+LSM-Tree Delete: 0.0003 s (1433050.74 ops/sec)
+
+=== Workload A (50/50 Read/Update, N=5000) ===
+Pre-loading B-Tree...
+Running B-Tree Workload A...
+B-Tree Throughput: 9591.38 ops/sec
+B-Tree WAF: 256.00 (Phys: 10297344 / Log: 40224)
+Pre-loading LSM-Tree...
+Running LSM-Tree Workload A...
+LSM-Tree Throughput: 36144.36 ops/sec
+LSM-Tree WAF: 0.81 (Phys: 32768 / Log: 40224)
