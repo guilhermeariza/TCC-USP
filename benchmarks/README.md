@@ -2,6 +2,24 @@
 
 Este projeto contém os scripts e configurações para realizar o benchmarking comparativo entre PostgreSQL (B-Tree) e RocksDB (LSM-Tree) usando YCSB.
 
+## Benchmarks de Estruturas de Dados
+
+## Executando os Benchmarks (Método Recomendado)
+
+Para garantir resultados confiáveis e evitar erros de estado residual (ex: "table already exists"), utilize o script wrapper que limpa o ambiente antes de cada execução:
+
+### Linux / WSL / Git Bash
+```bash
+./run_docker_benchmarks.sh
+```
+
+Este script irá:
+1.  Remover containers e volumes antigos (`docker-compose down -v`).
+2.  Reconstruir as imagens (`docker-compose build`).
+3.  Iniciar os testes e exibir os logs.
+
+---
+
 ## Estrutura do Projeto
 
 *   `configs/`: Arquivos de configuração dos workloads do YCSB (A-F).

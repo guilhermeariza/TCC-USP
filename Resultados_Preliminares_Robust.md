@@ -5,7 +5,7 @@
 
 ## Resumo
 
-Este relatório apresenta os resultados preliminares e a análise teórica para o projeto de pesquisa que visa comparar o desempenho das estruturas B-Trees e LSM-Trees em SSDs NVMe Gen4. Até o momento, foi estabelecida uma linha de base sólida para o **RocksDB (LSM-Tree)** utilizando o benchmark YCSB, atingindo aproximadamente **5.070 ops/sec** em cargas mistas (50/50 R/W) com latências de cauda (P99) abaixo de **1.6ms**. Os testes com **PostgreSQL (B-Tree)** encontram-se em fase final de estabilização do ambiente, com execuções iniciais identificando desafios críticos de configuração em ambientes containerizados. Este documento detalha os dados coletados, analisa os obstáculos técnicos encontrados e projeta o comportamento esperado para as próximas fases com base na literatura e nas especificações do hardware alvo (Kingston NV2 1TB NVMe).
+Este relatório apresenta os resultados preliminares e a análise experimental comparando B-Trees (PostgreSQL) e LSM-Trees (RocksDB) em SSDs NVMe Gen4. Os testes de macro-benchmark (YCSB) revelaram uma **superioridade massiva do RocksDB** em todos os cenários. Em cargas de escrita (Workload A-Load), o RocksDB foi **41x mais rápido** (43k vs 1k ops/sec). Em cargas mistas e de leitura (Workloads A, B, C, D, F), o RocksDB manteve uma vantagem de **3x a 9x** sobre o PostgreSQL. O PostgreSQL falhou na execução do Workload E (Scans) devido a limitações do driver JDBC. Estes resultados empíricos, combinados com micro-benchmarks em C, validam a hipótese de que a amplificação de escrita das B-Trees é um gargalo crítico em hardware moderno, e surpreendentemente, o LSM-Tree também ofereceu latências de leitura superiores neste ambiente.
 
 ---
 
@@ -44,35 +44,45 @@ O ambiente de execução consiste em uma estação de trabalho equipada com proc
 
 ---
 
-## 3. Resultados Preliminares
+## 3. Resultados Experimentais (Macro-Benchmark YCSB)
 
-Os testes iniciais focaram na validação do ambiente de teste e na obtenção de métricas de base (*baseline*) para o **Workload A (Update Heavy: 50% Leitura / 50% Atualização)**.
+As medições foram realizadas utilizando YCSB 0.18.0 containerizado, com 1 milhão de operações por workload (exceto Workload E no PostgreSQL que apresentou falha).
 
-### 3.1. Linha de Base: RocksDB (LSM-Tree)
+### 3.1. Throughput (Operações/segundo)
 
-O RocksDB demonstrou alta eficiência na ingestão de dados e consistência em latência, confirmando a hipótese de que LSM-Trees se beneficiam do design *append-only*, mesmo em SSDs rápidos.
+| Workload | Descrição | PostgreSQL (B-Tree) | RocksDB (LSM-Tree) | Delta (LSM vs B-Tree) |
+| :--- | :--- | :--- | :--- | :--- |
+| **A (Load)** | 100% Insert | 1.053 ops/sec | 43.647 ops/sec | **+4045% (41x)** |
+| **A (Run)** | 50/50 R/W | 1.496 ops/sec | 7.045 ops/sec | **+370% (4.7x)** |
+| **B (Run)** | 95/5 R/W | 3.482 ops/sec | 10.977 ops/sec | **+215% (3.1x)** |
+| **C (Run)** | 100% Read | 4.324 ops/sec | 15.341 ops/sec | **+254% (3.5x)** |
+| **D (Run)** | 95/5 Read/Insert (Latest) | 4.156 ops/sec | 36.580 ops/sec | **+780% (8.8x)** |
+| **E (Run)** | 95/5 Scan/Insert | **FALHA** (Driver JDBC) | 2.671 ops/sec | N/A |
+| **F (Run)** | 50/50 Read/RMW | 1.361 ops/sec | 9.849 ops/sec | **+623% (7.2x)** |
 
-**Resumo da Execução (Workload A):**
-*   **Throughput Médio:** `5.069 ops/sec`
-*   **Tempo Total de Execução:** ~197 segundos para 1.000.000 operações.
-*   **Latência de Leitura (Média):** `181 µs`
-*   **Latência de Escrita (Média):** `205 µs`
-*   **Latência de Cauda (P99):** `1.49 ms` (Leitura) / `1.56 ms` (Escrita)
+### 3.2. Latência Média (Microssegundos)
 
-A latência extremamente baixa de leitura (Média de 0.18 ms) sugere que o *Bloom Filter* e o cache de blocos do RocksDB estão operando eficientemente, minimizando o impacto da estrutura em níveis (*levels*).
+| Workload | Operação | PostgreSQL (µs) | RocksDB (µs) | Observação |
+| :--- | :--- | :--- | :--- | :--- |
+| **A (Run)** | Read | 264 | 124 | RocksDB 2x mais rápido |
+| | Update | 1.065 | 145 | **RocksDB 7.3x mais rápido** |
+| **B (Run)** | Read | 240 | 87 | RocksDB 2.7x mais rápido |
+| | Update | 1.120 | 119 | RocksDB 9.4x mais rápido |
+| **C (Run)** | Read | 229 | 63 | RocksDB 3.6x mais rápido |
+| **D (Run)** | Read | 194 | 26 | RocksDB 7.4x mais rápido |
+| | Insert | 1.075 | 22 | **RocksDB 48x mais rápido** |
+| **F (Run)** | Read | 247 | 86 | RocksDB 2.8x mais rápido |
+| | Read-Modify-Write | 1.215 | 112 | **RocksDB 10.8x mais rápido** |
 
-### 3.2. Desafios com PostgreSQL (B-Tree)
+### 3.3. Análise dos Resultados
 
-As execuções preliminares com PostgreSQL revelaram desafios significativos na orquestração do ambiente de teste. Embora o throughput "bruto" tenha se aproximado de **5.100 ops/sec**, uma análise detalhada dos logs indicou uma taxa de erro elevada (`PSQLException: relation "usertable" does not exist`), sugerindo que os testes iniciavam antes da completa inicialização e carga das tabelas no banco de dados.
+1.  **Escrita (Insert/Update):** A superioridade do RocksDB (LSM-Tree) em escritas é massiva, variando de 4x a 48x dependendo do cenário. Isso confirma a eficiência do *Log-Structured* em transformar escritas aleatórias em sequenciais, eliminando a amplificação de escrita severa observada na B-Tree (PostgreSQL).
+2.  **Leitura (Read):** O RocksDB superou o PostgreSQL consistentemente em leituras (Workloads B, C, D). A latência de leitura do RocksDB (~63-124µs) indica uso eficiente de cache, enquanto o PostgreSQL apresenta overheads possivelmente relacionados ao protocolo de rede (JDBC/TCP) em ambiente containerizado, oscilando entre 200-260µs.
+3.  **Workload E (Scans):** O Postgres falhou com `ArithmeticException` no driver JDBC durante scans longos. O RocksDB completou, mas com throughput reduzido (2.671 ops/sec) devido ao custo de varredura (*seek*) através de múltiplos níveis de SSTables.
 
-Nas operações bem-sucedidas isoladas, observou-se:
-*   **Latência de Leitura (Sucesso):** ~218 µs (comparável ao RocksDB).
-*   **Latência de Escrita (Sucesso):** ~1.623 µs (significativamente maior que o RocksDB).
+---
 
-Esta discrepância inicial na escrita (quase 8x mais lenta que o RocksDB) alinha-se com a teoria de que atualizações *in-place* em B-Trees são mais custosas devido à necessidade de *Page Writes* completos (frequentemente 4KB ou 8KB) para pequenas alterações, gerando maior amplificação de escrita.
-
-
-### 3.3. Resultados do Micro-Benchmark (Implementação C)
+### 3.4. Resultados do Micro-Benchmark (Implementação C)
 
 Os testes realizados com a implementação customizada em C confirmaram dramaticamente as diferenças estruturais entre as arquiteturas.
 
@@ -98,19 +108,20 @@ Estes dados validam a Hipótese 3 do projeto de pesquisa: *"A amplificação de 
 
 ---
 
-## 4. Análise Teórica e Expectativas (Próximos Passos)
+## 4. Análise dos Resultados vs Expectativas
 
-Com base nas características do hardware NVMe Gen4 e nos dados preliminares, projetamos os seguintes cenários para a bateria completa de testes:
+Com base nas características do hardware NVMe Gen4 e nos dados coletados, comparamos as previsões iniciais com os resultados reais:
 
-### 4.1. Previsão de Desempenho por Workload
+### 4.1. Previsão vs Realidade
 
-| Workload | Característica | Previsão: B-Tree (Postgres) | Previsão: LSM-Tree (RocksDB) | Hipótese NVMe |
+| Workload | Característica | Previsão: B-Tree (Postgres) | Previsão: LSM-Tree (RocksDB) | Resultado Observado |
 | :--- | :--- | :--- | :--- | :--- |
-| **A (50/50)** | Mista | Inferior (Gargalo de Escrita Aleatória) | **Superior** (Absorção de Escrita no MemTable) | NVMe reduz latência, mas não elimina o *overhead* de atualização *in-place*. |
-| **B (95/5 Read)**| Leitura Predom. | **Competitivo / Superior** | Levemente Inferior (Overhead de descompactação) | Baixa latência do NVMe beneficia leituras diretas em B-Tree. |
-| **C (100% Read)**| Apenas Leitura | **Superior** | Inferior | B-Tree deve vencer por acesso direto sem verificação de Bloom Filters. |
-| **E (Scans)** | Range Scan | **Superior** | Inferior | Organização sequencial das folhas da B-Tree é ideal para scans; LSM sofre com *merges* de múltiplos arquivos. |
-| **F (RMW)** | Read-Modify-Write | Inferior | **Superior** | Atomicidade do RMW no LSM é mais eficiente que o *lock* de página na B-Tree. |
+| **A (50/50)** | Mista | Inferior (Gargalo de Escrita) | **Superior** (Absorção no MemTable) | **Confirmado:** LSM 4.7x mais rápido. |
+| **B (95/5)** | Leitura Predom. | **Competitivo / Superior** | Levemente Inferior | **Refutado:** LSM 3x mais rápido (Cache eficiente). |
+| **C (100% Read)**| Apenas Leitura | **Superior** (Acesso Direto) | Inferior (Overhead Bloom Filter) | **Refutado:** LSM 3.5x mais rápido. |
+| **D (Latest)** | Leitura Recente | N/A | N/A | **LSM 8.8x mais rápido** (Localidade temporal). |
+| **E (Scans)** | Range Scan | **Superior** | Inferior (Merge de SSTables) | **Inconclusivo:** Postgres falhou; LSM lento (2.6k ops). |
+| **F (RMW)** | Read-Modify-Write | Inferior (Lock de Página) | **Superior** (Atomicidade) | **Confirmado:** LSM 7.2x mais rápido. |
 
 ### 4.2. Impacto da Amplificação de Escrita (WAF)
 Espera-se que o B-Tree apresente um WAF significativamente maior (potencialmente > 5x) em comparação ao LSM-Tree no **Workload A**. Em SSDs NVMe, embora a velocidade mascare a latência, o WAF elevado consumirá mais ciclos de P/E (*Program/Erase*), degradando a vida útil do dispositivo mais rapidamente. O monitoramento via `iostat` será crucial para validar esta métrica.
@@ -119,9 +130,9 @@ Espera-se que o B-Tree apresente um WAF significativamente maior (potencialmente
 
 ## 5. Plano de Ação Imediato
 
-1.  **Correção do PostgreSQL:** Ajustar o script de inicialização do benchmark para garantir que a tabela `usertable` esteja totalmente carregada e indexada antes do início da fase de execução (*run*).
-2.  **Validação de WAF:** Instrumentar a coleta de bytes escritos no nível do bloco (`/sys/block/nvme0n1/stat`) para calcular o WAF real durante os testes.
-3.  **Execução Completa:** Rodar os Workloads B, C, D, E e F após a estabilização do ambiente PostgreSQL.
+1.  **Investigação da Falha Workload E:** Depurar o erro `ArithmeticException` no driver JDBC PostgreSQL para completar o cenário de Scans.
+2.  **Medição de WAF em Tempo Real:** Implementar monitoramento via `iostat` ou script Python para capturar a amplificação de escrita real durante os testes YCSB.
+3.  **Refinamento do Micro-benchmark:** Aumentar a escala dos testes em C para validar se a vantagem do LSM se mantém com volumes de dados maiores que a RAM.
 
 ## 6. Referências Bibliográficas Selecionadas
 
